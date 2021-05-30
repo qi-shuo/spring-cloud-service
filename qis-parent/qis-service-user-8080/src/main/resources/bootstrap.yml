@@ -1,0 +1,33 @@
+spring:
+  cloud:
+    # config客户端配置,和ConfigServer通信，并告知ConfigServer希望获取的配置信息在哪个文件中
+    config:
+      name: user  #配置文件名称
+      profile: dev  #后缀名称
+      label: main #分支名称
+      uri: http://localhost:9006    #ConfigServer配置中心地址
+
+ribbon:
+  #请求连接超时时间
+  ConnectTimeout: 2000
+  #请求处理超时时间
+  ##########################################Feign超时时长设置
+  ReadTimeout: 3000
+  #对所有操作都进行重试
+  OkToRetryOnAllOperations: true
+  ####根据如上配置，当访问到故障请求的时候，它会再尝试访问一次当前实例（次数由MaxAutoRetries配置），
+  ####如果不行，就换一个实例进行访问，如果还不行，再换一次实例访问（更换次数由MaxAutoRetriesNextServer配置），
+  ####如果依然不行，返回失败信息。
+  MaxAutoRetries: 0 #对当前选中实例重试次数，不包括第一次调用
+  MaxAutoRetriesNextServer: 0 #切换实例的重试次数
+  NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RoundRobinRule #负载策略调整
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:8761/eureka,http://127.0.0.1:8762/eureka
+  instance:
+    prefer-ip-address: true  #服务实例中显示ip，而不是显示主机名（兼容老的eureka版本）
+    # 实例名称： 192.168.1.103:lagou-service-resume:8080，我们可以自定义它
+    instance-id: ${spring.cloud.client.ip-address}:${spring.application.name}:${server.port}
+
