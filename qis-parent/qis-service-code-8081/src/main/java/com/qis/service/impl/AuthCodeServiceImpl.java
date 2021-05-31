@@ -45,7 +45,12 @@ public class AuthCodeServiceImpl implements IAuthCodeService {
             //已经注册过了
             return false;
         }
+        LaGouAuthCode lastLaGouAuthCode = laGouAuthCodeMapper.getLastLaGouAuthCode(email, new Date());
+        if (Objects.nonNull(lastLaGouAuthCode)) {
+            return true;
+        }
         Integer authCode = getAuthCode();
+        log.info("authCode:{}", authCode);
         boolean sendResult = emailClient.semEmail(email, String.valueOf(authCode));
         if (sendResult) {
             long time = System.currentTimeMillis();
