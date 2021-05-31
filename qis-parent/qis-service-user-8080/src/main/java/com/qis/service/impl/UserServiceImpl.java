@@ -36,15 +36,15 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public boolean register(String email, String password, String code,HttpServletResponse response) {
+    public Integer register(String email, String password, String code,HttpServletResponse response) {
         LaGouUser laGouUser = LaGouUser.builder().email(email).password(password).build();
         Integer validate = authCodeClient.validate(email, code);
         log.info("验证码验证,email:{},code:{},状态:{}", email, code, validate);
         if (validate > 0) {
-            return false;
+            return validate;
         }
         laGouUserMapper.save(laGouUser);
-        return true;
+        return validate;
     }
 
     @Override

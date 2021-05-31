@@ -27,8 +27,13 @@ public class UserController {
     }
 
     @GetMapping("/register/{email}/{password}/{code}")
-    public boolean register(@PathVariable String email, @PathVariable String password, @PathVariable String code, HttpServletResponse response) {
-        return userService.register(email, password, code, response);
+    public Integer register(@PathVariable String email, @PathVariable String password, @PathVariable String code, HttpServletResponse response) {
+        try {
+            return userService.register(email, password, code, response);
+        } catch (Exception e) {
+            return 1;
+        }
+
     }
 
     @GetMapping("/login/{email}/{password}")
@@ -42,7 +47,10 @@ public class UserController {
             }
         }
         String token = userService.login(email, password);
-        response.addCookie(new Cookie("token", token));
+        Cookie cookie = new Cookie("token", token);
+        //cookie.setHttpOnly(false);
+        cookie.setPath("/");
+        response.addCookie(cookie);
         return token;
     }
 

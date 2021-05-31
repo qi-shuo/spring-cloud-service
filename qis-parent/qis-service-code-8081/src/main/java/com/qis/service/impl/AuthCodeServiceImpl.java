@@ -33,7 +33,7 @@ public class AuthCodeServiceImpl implements IAuthCodeService {
     public Integer validate(String email, String code) {
         LaGouAuthCode lastLaGouAuthCode = laGouAuthCodeMapper.getLastLaGouAuthCode(email, new Date());
         if (Objects.isNull(lastLaGouAuthCode) || !code.equals(lastLaGouAuthCode.getCode())) {
-            return 1;
+            return 2;
         }
         return 0;
     }

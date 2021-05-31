@@ -11,6 +11,6 @@ import org.springframework.stereotype.Component;
 public class AuthCodeFallback implements IAuthCodeClient {
     @Override
     public Integer validate(String email, String code) {
-        return 2;
+        return 1;
     }
 }

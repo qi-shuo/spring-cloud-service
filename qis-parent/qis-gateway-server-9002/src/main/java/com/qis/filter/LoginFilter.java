@@ -3,6 +3,7 @@ package com.qis.filter;
 import com.qis.client.IUserClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -25,12 +26,13 @@ import java.util.Objects;
  */
 @Slf4j
 @Component
+@RefreshScope
 public class LoginFilter implements GlobalFilter, Ordered {
     public final static String ATTRIBUTE_IGNORE_TEST_GLOBAL_FILTER = "@ignoreLoginGlobal";
 
     @Resource
     private IUserClient userClient;
-    @Value("redirect.url")
+    @Value("${redirect.url}")
     private String redirectUrl;
 
     @Override

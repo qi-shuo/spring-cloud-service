@@ -24,7 +24,7 @@ public interface IUserService {
      * @param response
      * @return
      */
-    boolean register(String email, String password, String code,HttpServletResponse response);
+    Integer register(String email, String password, String code,HttpServletResponse response);
 
     /**
      * 登录
