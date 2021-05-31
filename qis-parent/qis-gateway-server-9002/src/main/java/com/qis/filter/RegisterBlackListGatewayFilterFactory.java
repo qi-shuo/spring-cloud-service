@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
-import org.springframework.core.Ordered;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -24,10 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author qishuo
- * @date 2021/5/30 7:45 下午
+ * @date 2021/5/31 11:39 下午
  */
+@Component
 @Slf4j
-public class RegisterBlackListFilter implements GatewayFilter, Ordered {
+public class RegisterBlackListGatewayFilterFactory extends AbstractGatewayFilterFactory<RegisterBlackListGatewayFilterFactory.Config> {
     /**
      * key:ip,key:时间戳单位秒,value请求的次数
      */
@@ -35,16 +36,22 @@ public class RegisterBlackListFilter implements GatewayFilter, Ordered {
     /**
      * 最大请求次数
      */
-    @Value("max.count")
+    @Value("${max.count}")
     private int maxCount;
 
     /**
      * 请求时间单位秒
      */
-    @Value("max.request.timeUnit")
+    @Value("${max.request.timeUnit}")
     private int requestTimeUnit;
-
+    public RegisterBlackListGatewayFilterFactory() {
+        super(RegisterBlackListGatewayFilterFactory.Config.class);
+    }
     @Override
+    public GatewayFilter apply(Config config) {
+        return this::filter;
+    }
+
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         ServerHttpResponse response = exchange.getResponse();
@@ -59,12 +66,13 @@ public class RegisterBlackListFilter implements GatewayFilter, Ordered {
         String hostString = request.getRemoteAddress().getHostString();
         if (isIntercept(hostString)) {
             //访问拒接
-            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            response.setStatusCode(HttpStatus.FORBIDDEN);
             log.info("=====>IP:{},频繁请求", hostString);
             String data = "请求被拒接!";
             DataBuffer wrap = response.bufferFactory().wrap(data.getBytes());
             return response.writeWith(Mono.just(wrap));
         }
+        exchange.getAttributes().put("@ignoreLoginGlobal", true);
         return chain.filter(exchange);
     }
 
@@ -86,16 +94,23 @@ public class RegisterBlackListFilter implements GatewayFilter, Ordered {
             return false;
         }
         Map<Long, AtomicInteger> longAtomicIntegerMap = cacheMap.get(host);
+        long currTime = getTime();
+        if(longAtomicIntegerMap.containsKey(currTime)){
+            longAtomicIntegerMap.get(currTime).incrementAndGet();
+        }else {
+            AtomicInteger atomicInteger = new AtomicInteger(1);
+            longAtomicIntegerMap.put(currTime,atomicInteger);
+
+        }
         AtomicInteger atomicInteger = new AtomicInteger(0);
         //打印监控情况,并清理超过1分钟的数据
         List<Long> clearKey = new ArrayList<>();
         longAtomicIntegerMap.forEach((time, count) -> {
-            //当前时间
-            long currTime = getTime();
-            if (currTime - time > requestTimeUnit) {
-                clearKey.add(currTime);
+            long curr = getTime();
+            if (curr - time > requestTimeUnit) {
+                clearKey.add(time);
             } else {
-                atomicInteger.incrementAndGet();
+                atomicInteger.addAndGet(count.get());
             }
         });
         //批量清理
@@ -112,8 +127,12 @@ public class RegisterBlackListFilter implements GatewayFilter, Ordered {
         return System.currentTimeMillis() / 1000;
     }
 
+    public static class Config {
+
+    }
+
     @Override
-    public int getOrder() {
-        return 1;
+    public String name() {
+        return "RegisterBlackList";
     }
 }
